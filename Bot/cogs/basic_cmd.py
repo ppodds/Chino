@@ -44,9 +44,7 @@ class BasicCmd(commands.Cog):
             reverse = True
         else:
             reverse = False
-        emojis = ctx.guild.emojis
-        channels = ctx.guild.text_channels
-        count = await cal_emoji(channels, emojis, search_range)
+        count = await self.cal_emoji(ctx.guild, search_range)
 
         # 輸出統計
         embed = discord.Embed(description=f"「下面是我統計的結果! 欸嘿嘿~{tibi}」")
@@ -58,29 +56,43 @@ class BasicCmd(commands.Cog):
         # 排序
         result = sorted(items, key=lambda x: x[1], reverse=reverse)
         for item in result:
-            for emoji in emojis:
+            for emoji in ctx.guild.emojis:
                 if emoji.name == item[0]:
-                    embed.description += f'{emoji_out(emoji)}使用{item[1]}次\n'
+                    s = f'{emoji_out(emoji)}使用{item[1]}次\n'
+                    await check_description(ctx, embed, s)
+                    embed.description += s
                     break
         embed.set_footer(text="由ppodds親手調教",
                          icon_url='https://cdn.discordapp.com/avatars/252029078452961280/551ebcf0c6e6a3807c54afef6d70a04c.png?size=1024')
         await ctx.send(embed=embed)
 
+    async def cal_emoji(self, guild, search_range):
+        bot = guild.get_member(self.client.user.id)
+        emojis = guild.emojis
+        channels = guild.text_channels
+        # 用來儲存emoji的統計數目
+        # emoji_name(string) -> count(int)
+        count = {}
+        # 初始化計數表
+        for emoji in emojis:
+            count[emoji.name] = 0
+        # 統計頻道歷史中的emoji出現次數
+        for channel in channels:
+            permissions = channel.permissions_for(bot)
+            if not permissions.read_message_history:
+                continue
+            async for message in channel.history(limit=None, after=datetime.now() - timedelta(days=search_range)):
+                for emoji in emojis:
+                    if f':{emoji.name}:' in message.content:
+                        count[emoji.name] += 1
+        return count
 
-async def cal_emoji(channels, emojis, search_range):
-    # 用來儲存emoji的統計數目
-    # emoji_name(string) -> count(int)
-    count = {}
-    # 初始化計數表
-    for emoji in emojis:
-        count[emoji.name] = 0
-    # 統計頻道歷史中的emoji出現次數
-    for channel in channels:
-        async for message in channel.history(limit=None, after=datetime.now() - timedelta(days=search_range)):
-            for emoji in emojis:
-                if f':{emoji.name}:' in message.content:
-                    count[emoji.name] += 1
-    return count
+
+# 檢查embed是否過長
+async def check_description(ctx, embed, s):
+    if len(embed.description) + len(s) > 2048:
+        await ctx.send(embed=embed)
+        embed.description = ''
 
 
 def emoji_out(emoji):

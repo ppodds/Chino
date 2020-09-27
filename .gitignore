@@ -1,0 +1,6 @@
+discord.log
+.idea
+__pycache__
+venv
+Log.txt
+token

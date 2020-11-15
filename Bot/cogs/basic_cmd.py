@@ -85,6 +85,10 @@ class BasicCmd(commands.Cog):
                 for emoji in emojis:
                     if f':{emoji.name}:' in message.content:
                         count[emoji.name] += 1
+                    for reaction in message.reactions:
+                        if isinstance(reaction.emoji, discord.Emoji):
+                            if emoji.name == reaction.emoji.name:
+                                count[emoji.name] += 1
         return count
 
 

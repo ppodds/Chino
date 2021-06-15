@@ -100,6 +100,8 @@ async def check_description(ctx, embed, s):
 
 
 def emoji_out(emoji):
+    if emoji.animated:
+        return f'<a:{emoji.name}:{emoji.id}>'
     return f'<:{emoji.name}:{emoji.id}>'
 
 
